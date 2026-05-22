@@ -1,0 +1,59 @@
+categories:
+  jfet:
+    audio_use: "buffers, phasers, chaveamento, pré-amplificadores de alta impedância"
+    components:
+      - 2SK30
+      - 2SK117
+      - 2SK170
+      - 2SK246
+      - J201
+      - MPF102
+      - 2N5457
+      - 2N5485
+      - BF245
+  germanio:
+    audio_use: "fuzzes, clipping vintage, diodos/transistores de baixa queda"
+    components:
+      - AC128
+      - AC125
+      - AC176
+      - OC44
+      - OC71
+      - 1N34A
+      - OA90
+      - OA91
+      - 2SA
+      - 2SB
+      - 2SD
+  opamps_vintage:
+    audio_use: "distorções, filtros ativos, compressores e circuitos clássicos"
+    components:
+      - LM308
+      - LM301
+      - LM208
+      - CA3080
+      - CA3130
+      - CA3140
+      - LF356
+      - RC4558
+      - LM1458
+  bbd_delay:
+    audio_use: "chorus, flanger, vibrato e delay analógico"
+    components:
+      - MN3005
+      - MN3007
+      - MN3205
+      - MN3207
+      - SAD1024
+      - TDA1022
+  audio_geral:
+    audio_use: "utilidades gerais para pedais, modulação, delay, chaveamento ou controle"
+    components:
+      - NE570
+      - NE571
+      - SA571
+      - PT2399
+      - M65831
+      - CD4049
+      - CD4053
+      - CD4066
