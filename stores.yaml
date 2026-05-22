@@ -1,0 +1,10 @@
+stores:
+  - name: "Eletrônica Castro"
+    base_url: "https://www.eletronicacastro.com.br/produto/busca/?q={query}"
+    extractor: "eletronica_castro"
+  - name: "Soldafria"
+    base_url: "https://www.soldafria.com.br/busca?busca={query}"
+    extractor: "generic"
+  - name: "Baú da Eletrônica"
+    base_url: "https://www.baudaeletronica.com.br/catalogsearch/result/?q={query}"
+    extractor: "generic"
