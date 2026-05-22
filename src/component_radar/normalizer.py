@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import re
-from difflib import SequenceMatcher
+
+from rapidfuzz import fuzz
 
 _SUFFIX_PATTERN = re.compile(r"^(?P<base>[A-Z]+\d+)(?P<suffix>[A-Z]{1,3})$")
 _TOKEN_PATTERN = re.compile(r"[A-Z0-9]+")
@@ -28,10 +29,6 @@ def _has_strict_token(text: str, target: str) -> bool:
     return False
 
 
-def _fuzzy_ratio(a: str, b: str) -> int:
-    return int(100 * SequenceMatcher(None, a, b).ratio())
-
-
 def is_component_match(target: str, candidate_text: str, fuzzy_threshold: int = 92) -> bool:
     target_up = target.upper()
     text = candidate_text.upper()
@@ -40,7 +37,7 @@ def is_component_match(target: str, candidate_text: str, fuzzy_threshold: int = 
 
     text_norm = normalize_component_token(text)
     target_norm = normalize_component_token(target_up)
-    ratio = _fuzzy_ratio(target_norm, text_norm)
+    ratio = fuzz.partial_ratio(target_norm, text_norm)
     if ratio < fuzzy_threshold:
         return False
     if re.search(rf"{re.escape(target_norm)}\d", text_norm):

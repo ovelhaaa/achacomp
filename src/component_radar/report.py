@@ -39,7 +39,7 @@ table{{width:100%;border-collapse:collapse;font-size:.9rem}}th,td{{border:1px so
 <div style='overflow-x:auto'><table><thead><tr><th>novidade</th><th>termo</th><th>categoria</th><th>loja</th><th>título</th><th>preço</th><th>disponibilidade</th><th>prioridade</th><th>uso em áudio</th><th>link</th></tr></thead>
 <tbody id='tb'></tbody></table></div></div>
 <script>
-const DATA = {json.dumps(data, ensure_ascii=False)};
+const DATA = {json.dumps(data, ensure_ascii=False).replace("</", "<\/")};
 const tb = document.getElementById('tb');
 function render(){{
  const q=(document.getElementById('search').value||'').toLowerCase();

@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-import csv
 import hashlib
 import json
 from pathlib import Path
 from typing import Any
+
+import pandas as pd
 
 from .config import DATA_DIR, LATEST_CSV, LATEST_JSON, SEEN_JSON
 
@@ -34,9 +35,17 @@ def update_history(items: list[dict[str, Any]], scan_time_iso: str, seen_path: P
             seen[key]["last_seen"] = scan_time_iso
         else:
             item["is_new"] = True
-            seen[key] = {"hash": key, "term": item.get("term"), "title": item.get("title"), "store": item.get("store"), "first_seen": scan_time_iso, "last_seen": scan_time_iso}
+            seen[key] = {
+                "hash": key,
+                "term": item.get("term"),
+                "title": item.get("title"),
+                "store": item.get("store"),
+                "first_seen": scan_time_iso,
+                "last_seen": scan_time_iso,
+            }
         item["first_seen"] = seen[key]["first_seen"]
         item["last_seen"] = seen[key]["last_seen"]
+
     seen_path.parent.mkdir(parents=True, exist_ok=True)
     seen_path.write_text(json.dumps(seen, ensure_ascii=False, indent=2), encoding="utf-8")
     return items
@@ -45,11 +54,4 @@ def update_history(items: list[dict[str, Any]], scan_time_iso: str, seen_path: P
 def save_latest(items: list[dict[str, Any]]) -> None:
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     LATEST_JSON.write_text(json.dumps(items, ensure_ascii=False, indent=2), encoding="utf-8")
-    fields = sorted({k for i in items for k in i.keys()}) if items else []
-    with LATEST_CSV.open("w", newline="", encoding="utf-8") as f:
-        if not fields:
-            f.write("")
-            return
-        writer = csv.DictWriter(f, fieldnames=fields)
-        writer.writeheader()
-        writer.writerows(items)
+    pd.DataFrame(items).to_csv(LATEST_CSV, index=False)
