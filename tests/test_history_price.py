@@ -41,3 +41,25 @@ def test_failed_store_not_missing():
     seen = {"a1": {"stable_id": "a1", "store_id": "loja", "status": "active", "last_event": "seen_again"}}
     _, _, summary = update_history([], seen, "2026-01-01", set())
     assert summary["items_missing"] == 0
+
+
+def test_first_sighting_does_not_set_availability_changed():
+    items, _, _ = update_history([_item(availability="em estoque")], {}, "2026-01-01", {"loja"})
+    assert items[0]["availability_changed"] is False
+
+
+def test_legacy_missing_without_store_id_when_some_store_succeeded():
+    seen = {
+        "legacy": {
+            "stable_id": "legacy",
+            "status": "active",
+            "store_id": "",
+            "search_term": "LM308",
+            "category": "opamp",
+        }
+    }
+    _, _, summary = update_history([], seen, "2026-01-01", {"loja"})
+    assert summary["items_missing"] == 1
+    ev = summary["events"][0]
+    assert ev["event"] == "missing"
+    assert "term" in ev and "category" in ev

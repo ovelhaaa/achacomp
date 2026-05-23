@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+from datetime import datetime, timezone
 from pathlib import Path
 import re
 
@@ -16,7 +17,7 @@ from .storage import save_latest, update_history
 
 def cmd_scan() -> None:
     items, store_status = run_scan()
-    scan_time = items[0]["scan_datetime"] if items else ""
+    scan_time = items[0]["scan_datetime"] if items else datetime.now(timezone.utc).isoformat()
     successful = {s["store_id"] for s in store_status if s.get("success")}
     items, summary = update_history(items, scan_time, successful)
     summary.update({
@@ -119,7 +120,8 @@ def main() -> None:
     elif args.command == "report":
         cmd_report()
     elif args.command == "all":
-        cmd_scan(); cmd_report()
+        cmd_scan()
+        cmd_report()
     elif args.command == "history-summary":
         cmd_history_summary()
     elif args.command == "inspect-store":

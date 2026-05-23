@@ -91,6 +91,7 @@ def update_history(current_items: list[dict[str, Any]], seen: dict[str, dict[str
             existing["max_price_value"] = val if prev_max is None else max(prev_max, val)
 
         previous_av = existing.get("last_availability")
+        has_prior_observation = int(existing.get("times_seen", 0)) > 0
         existing["previous_availability"] = previous_av
         existing["last_availability"] = curr_av
         existing.update({
@@ -126,7 +127,7 @@ def update_history(current_items: list[dict[str, Any]], seen: dict[str, dict[str
                     price_delta_percent = (price_delta / float(previous_price)) * 100.0
                 sig_drop = price_drop and abs(price_delta_percent) >= 10
 
-        availability_changed = previous_av is not None and previous_av != curr_av
+        availability_changed = has_prior_observation and previous_av is not None and previous_av != curr_av
         event = base_event
         if base_event == "seen_again":
             if price_drop:
@@ -168,11 +169,24 @@ def update_history(current_items: list[dict[str, Any]], seen: dict[str, dict[str
     for sid, entry in seen.items():
         if sid in current_ids:
             continue
-        if entry.get("status") == "active" and entry.get("store_id") in successful_store_ids:
+        entry_store_id = entry.get("store_id")
+        store_was_successful = bool(entry_store_id) and entry_store_id in successful_store_ids
+        legacy_without_store = not entry_store_id and bool(successful_store_ids)
+        if entry.get("status") == "active" and (store_was_successful or legacy_without_store):
             entry["status"] = "missing"
             entry["last_event"] = "missing"
             missing += 1
-            events.append({"stable_id": sid, "event": "missing", "status": "missing", "store_id": entry.get("store_id", ""), "store": entry.get("store_name", ""), "title": entry.get("title", ""), "last_seen": entry.get("last_seen", "")})
+            events.append({
+                "stable_id": sid,
+                "event": "missing",
+                "status": "missing",
+                "store_id": entry.get("store_id", ""),
+                "store": entry.get("store_name", ""),
+                "term": entry.get("search_term", ""),
+                "category": entry.get("category", ""),
+                "title": entry.get("title", ""),
+                "last_seen": entry.get("last_seen", ""),
+            })
 
     summary = {
         "generated_at": now,
