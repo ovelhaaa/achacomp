@@ -24,6 +24,9 @@ PUBLIC_DIR = ROOT / "public"
 LATEST_JSON = DATA_DIR / "latest.json"
 LATEST_CSV = DATA_DIR / "latest.csv"
 SEEN_JSON = DATA_DIR / "seen.json"
+SUMMARY_JSON = DATA_DIR / "summary.json"
+EVENTS_JSON = DATA_DIR / "events.json"
+EVENTS_CSV = DATA_DIR / "events.csv"
 
 
 def load_yaml(path: Path) -> dict[str, Any]:

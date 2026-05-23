@@ -14,3 +14,8 @@
 - Criar fixture HTML é obrigatório para extratores específicos.
 - O fallback genérico deve ser mantido.
 - É proibido criar código para contornar CAPTCHA, login ou bloqueio explícito.
+- Nunca marcar item como missing se a loja correspondente falhou na varredura.
+- Manter compatibilidade com seen.json antigo sempre que possível.
+- Não considerar mudança de preço se o preço não foi parseado com confiança.
+- Não quebrar relatório HTML por campo vazio.
+- Criar testes para cada novo evento histórico.

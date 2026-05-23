@@ -1,1 +1,27 @@
-{}
+{
+  "abc": {
+    "stable_id": "abc",
+    "normalized_component": "lm308",
+    "search_term": "LM308",
+    "category": "",
+    "store_id": "",
+    "store_name": "Loja",
+    "title": "LM308N",
+    "normalized_title": "lm308n",
+    "link": "",
+    "first_seen": "2026-01-01T00:00:00+00:00",
+    "last_seen": "2026-01-01T00:00:00+00:00",
+    "times_seen": 1,
+    "last_price_raw": "",
+    "last_price_value": null,
+    "min_price_value": null,
+    "max_price_value": null,
+    "previous_price_value": null,
+    "last_availability": "",
+    "previous_availability": "",
+    "status": "active",
+    "last_event": "new",
+    "priority": "",
+    "audio_use": ""
+  }
+}

@@ -43,8 +43,9 @@ def test_run_scan_deduplicates_by_hash(monkeypatch):
     monkeypatch.setattr(scraper, "_fetch", lambda *args, **kwargs: "<a href='/p'>LM308N</a><a href='/p'>LM308N</a>")
     monkeypatch.setattr(scraper.time, "sleep", lambda *_: None)
 
-    items = run_scan(AppConfig(request_interval_seconds=0, retries=0))
+    items, status = run_scan(AppConfig(request_interval_seconds=0, retries=0))
     assert len(items) == 1
+    assert status[0]["success"] is True
 
 
 def test_run_scan_keeps_richest_duplicate(monkeypatch):
@@ -63,7 +64,8 @@ def test_run_scan_keeps_richest_duplicate(monkeypatch):
     monkeypatch.setattr(scraper, "get_extractor", lambda *_: _MockExtractor())
     monkeypatch.setattr(scraper.time, "sleep", lambda *_: None)
 
-    items = run_scan(AppConfig(request_interval_seconds=0, retries=0))
+    items, status = run_scan(AppConfig(request_interval_seconds=0, retries=0))
     assert len(items) == 1
+    assert status[0]["success"] is True
     assert items[0]["price"] == "R$ 12,30"
     assert items[0]["availability"] == "disponível"

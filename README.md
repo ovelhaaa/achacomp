@@ -53,3 +53,12 @@ Workflow: `.github/workflows/scan-and-publish.yml`
 - executa testes, scan e report.
 - commita mudanças em `data/` e `public/`.
 - publica `public/` via actions oficiais de Pages.
+
+## Histórico e eventos
+
+O radar agora mantém histórico avançado em `data/seen.json`, detectando eventos `new`, `returned`, `missing`, `price_drop`, `price_increase` e `availability_changed`.
+
+- Itens `missing` só são marcados quando a loja foi varrida com sucesso na execução atual.
+- Queda/subida de preço só é considerada quando o parser de preço brasileiro consegue extrair valor confiável.
+- Arquivos gerados: `data/summary.json`, `data/events.json` e `data/events.csv`.
+- O relatório HTML (`public/index.html`) inclui cards de resumo e filtro por evento.
