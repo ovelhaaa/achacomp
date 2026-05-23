@@ -23,7 +23,7 @@ def test_report_handles_empty_fields_and_escaping(tmp_path: Path):
                 "availability": "",
                 "priority": "alta",
                 "audio_use": "teste",
-                "link": "",
+                "link": "javascript:alert(1)",
             }
         ], ensure_ascii=False),
         encoding="utf-8",
@@ -31,8 +31,9 @@ def test_report_handles_empty_fields_and_escaping(tmp_path: Path):
     out = tmp_path / "index.html"
     generate_report(latest, out)
     html = out.read_text(encoding="utf-8")
-    assert "function esc(v)" in html
-    assert "const linkCell=link?" in html
+    assert "replace(/&/g,'&amp;')" in html
+    assert "const isSafe=/^(https?:\\/\\/|\\/)/i.test(link);" in html
+    assert "(link&&isSafe)?" in html
 
 
 def test_run_scan_deduplicates_by_hash(monkeypatch):
@@ -44,3 +45,20 @@ def test_run_scan_deduplicates_by_hash(monkeypatch):
 
     items = run_scan(AppConfig(request_interval_seconds=0, retries=0))
     assert len(items) == 1
+
+
+def test_run_scan_keeps_richest_duplicate(monkeypatch):
+    import component_radar.scraper as scraper
+
+    monkeypatch.setattr(scraper, "load_yaml", lambda path: {"categories": {"cat": {"components": ["LM308"]}}} if "targets" in str(path) else {"stores": [{"name": "S1", "base_url": "https://x.test?q={query}", "extractor": "generic"}]})
+    monkeypatch.setattr(scraper, "_fetch", lambda *args, **kwargs: "<html></html>")
+    monkeypatch.setitem(scraper.run_scan.__globals__, "_extract_generic", lambda *args, **kwargs: [
+        {"title": "LM308N", "link": "https://x.test/p", "raw_text": "LM308N", "price": "", "availability": ""},
+        {"title": "LM308N", "link": "https://x.test/p", "raw_text": "LM308N R$ 12,30 em estoque", "price": "R$ 12,30", "availability": "disponível"},
+    ])
+    monkeypatch.setattr(scraper.time, "sleep", lambda *_: None)
+
+    items = run_scan(AppConfig(request_interval_seconds=0, retries=0))
+    assert len(items) == 1
+    assert items[0]["price"] == "R$ 12,30"
+    assert items[0]["availability"] == "disponível"
