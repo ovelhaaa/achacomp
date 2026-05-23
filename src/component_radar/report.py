@@ -39,7 +39,7 @@ table{{width:100%;border-collapse:collapse;font-size:.9rem}}th,td{{border:1px so
 <div style='overflow-x:auto'><table><thead><tr><th>novidade</th><th>termo</th><th>categoria</th><th>loja</th><th>título</th><th>preço</th><th>disponibilidade</th><th>prioridade</th><th>uso em áudio</th><th>link</th></tr></thead>
 <tbody id='tb'></tbody></table></div></div>
 <script>
-const DATA = {json.dumps(data, ensure_ascii=False).replace("</", "<\/")};
+const DATA = {json.dumps(data, ensure_ascii=False).replace("</", "<\\/")};
 const tb = document.getElementById('tb');
 function render(){{
  const q=(document.getElementById('search').value||'').toLowerCase();
@@ -47,7 +47,12 @@ function render(){{
  const only=document.getElementById('onlyNew').checked;
  const rows=DATA.filter(r=>{{const txt=(JSON.stringify(r)||'').toLowerCase();
   return (!q||txt.includes(q))&&(!cat||r.category===cat)&&(!pri||r.priority===pri)&&(!only||r.is_new);}});
- tb.innerHTML=rows.map(r=>`<tr><td class='${'{'}r.is_new?'new':''{'}'}'>${'{'}r.is_new?'novo':''{'}'}</td><td>${'{'}r.term{'}'}</td><td>${'{'}r.category{'}'}</td><td>${'{'}r.store{'}'}</td><td>${'{'}r.title{'}'}</td><td>${'{'}r.price||''{'}'}</td><td>${'{'}r.availability||''{'}'}</td><td>${'{'}r.priority{'}'}</td><td>${'{'}r.audio_use{'}'}</td><td><a href='${'{'}r.link{'}'}' target='_blank' rel='noopener'>abrir</a></td></tr>`).join('');
+ function esc(v){{ return String(v ?? '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll("\"",'&quot;').replaceAll("'",'&#39;'); }}
+ tb.innerHTML=rows.map(r=>{{
+  const link=(r.link||'').trim();
+  const linkCell=link?`<a href='${'{'}esc(link){'}'}' target='_blank' rel='noopener'>abrir</a>`:'';
+  return `<tr><td class='${'{'}r.is_new?'new':''{'}'}'>${'{'}r.is_new?'novo':''{'}'}</td><td>${'{'}esc(r.term){'}'}</td><td>${'{'}esc(r.category){'}'}</td><td>${'{'}esc(r.store){'}'}</td><td>${'{'}esc(r.title){'}'}</td><td>${'{'}esc(r.price){'}'}</td><td>${'{'}esc(r.availability){'}'}</td><td>${'{'}esc(r.priority){'}'}</td><td>${'{'}esc(r.audio_use){'}'}</td><td>${'{'}linkCell{'}'}</td></tr>`;
+ }}).join('');
 }}
 ['search','category','priority','onlyNew'].forEach(id=>document.getElementById(id).addEventListener('input',render));
 render();

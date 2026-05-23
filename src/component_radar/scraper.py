@@ -89,6 +89,7 @@ def run_scan(cfg: AppConfig | None = None) -> list[dict[str, str]]:
     scan_time = datetime.now(timezone.utc).isoformat()
     extractor_map = {"generic": _extract_generic, "eletronica_castro": _extract_eletronica_castro}
     out: list[dict[str, str]] = []
+    seen_hashes: set[str] = set()
 
     session = requests.Session()
     session.headers.update({"User-Agent": cfg.user_agent})
@@ -118,6 +119,9 @@ def run_scan(cfg: AppConfig | None = None) -> list[dict[str, str]]:
                         "scan_datetime": scan_time,
                     }
                     item["hash"] = stable_hash(item)
+                    if item["hash"] in seen_hashes:
+                        continue
+                    seen_hashes.add(item["hash"])
                     out.append(item)
                 time.sleep(cfg.request_interval_seconds)
     return out

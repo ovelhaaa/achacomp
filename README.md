@@ -9,9 +9,9 @@ Radar para varrer lojas brasileiras de eletrônica em busca de componentes útei
 
 ## Uso
 
-- Scan: `python -m component_radar.cli scan`
-- Report: `python -m component_radar.cli report`
-- Tudo: `python -m component_radar.cli all`
+- Scan: `PYTHONPATH=src python -m component_radar.cli scan`
+- Report: `PYTHONPATH=src python -m component_radar.cli report`
+- Tudo: `PYTHONPATH=src python -m component_radar.cli all`
 
 Arquivos gerados:
 - `data/latest.csv`
