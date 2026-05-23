@@ -89,6 +89,10 @@ def run_scan(cfg: AppConfig | None = None) -> list[dict[str, str]]:
     scan_time = datetime.now(timezone.utc).isoformat()
     extractor_map = {"generic": _extract_generic, "eletronica_castro": _extract_eletronica_castro}
     out: list[dict[str, str]] = []
+    by_hash: dict[str, dict[str, str]] = {}
+
+    def _score_item(x: dict[str, str]) -> tuple[int, int, int]:
+        return (int(bool(x.get("price"))), int(bool(x.get("availability"))), len(x.get("title", "")))
 
     session = requests.Session()
     session.headers.update({"User-Agent": cfg.user_agent})
@@ -118,6 +122,9 @@ def run_scan(cfg: AppConfig | None = None) -> list[dict[str, str]]:
                         "scan_datetime": scan_time,
                     }
                     item["hash"] = stable_hash(item)
-                    out.append(item)
+                    existing = by_hash.get(item["hash"])
+                    if existing is None or _score_item(item) > _score_item(existing):
+                        by_hash[item["hash"]] = item
                 time.sleep(cfg.request_interval_seconds)
+    out.extend(by_hash.values())
     return out

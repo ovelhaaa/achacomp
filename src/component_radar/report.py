@@ -39,15 +39,24 @@ table{{width:100%;border-collapse:collapse;font-size:.9rem}}th,td{{border:1px so
 <div style='overflow-x:auto'><table><thead><tr><th>novidade</th><th>termo</th><th>categoria</th><th>loja</th><th>título</th><th>preço</th><th>disponibilidade</th><th>prioridade</th><th>uso em áudio</th><th>link</th></tr></thead>
 <tbody id='tb'></tbody></table></div></div>
 <script>
-const DATA = {json.dumps(data, ensure_ascii=False).replace("</", "<\/")};
+const DATA = {json.dumps(data, ensure_ascii=False).replace("</", "<\\/")};
 const tb = document.getElementById('tb');
+function esc(v){{
+ const s=String(v ?? '');
+ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;').replace(/'/g,'&#39;');
+}}
 function render(){{
  const q=(document.getElementById('search').value||'').toLowerCase();
  const cat=document.getElementById('category').value; const pri=document.getElementById('priority').value;
  const only=document.getElementById('onlyNew').checked;
  const rows=DATA.filter(r=>{{const txt=(JSON.stringify(r)||'').toLowerCase();
   return (!q||txt.includes(q))&&(!cat||r.category===cat)&&(!pri||r.priority===pri)&&(!only||r.is_new);}});
- tb.innerHTML=rows.map(r=>`<tr><td class='${'{'}r.is_new?'new':''{'}'}'>${'{'}r.is_new?'novo':''{'}'}</td><td>${'{'}r.term{'}'}</td><td>${'{'}r.category{'}'}</td><td>${'{'}r.store{'}'}</td><td>${'{'}r.title{'}'}</td><td>${'{'}r.price||''{'}'}</td><td>${'{'}r.availability||''{'}'}</td><td>${'{'}r.priority{'}'}</td><td>${'{'}r.audio_use{'}'}</td><td><a href='${'{'}r.link{'}'}' target='_blank' rel='noopener'>abrir</a></td></tr>`).join('');
+ tb.innerHTML=rows.map(r=>{{
+  const link=(r.link||'').trim();
+  const isSafe=/^(https?:\/\/|\/)/i.test(link);
+  const linkCell=(link&&isSafe)?`<a href='${'{'}esc(link){'}'}' target='_blank' rel='noopener'>abrir</a>`:(link?esc(link):'');
+  return `<tr><td class='${'{'}r.is_new?'new':''{'}'}'>${'{'}r.is_new?'novo':''{'}'}</td><td>${'{'}esc(r.term){'}'}</td><td>${'{'}esc(r.category){'}'}</td><td>${'{'}esc(r.store){'}'}</td><td>${'{'}esc(r.title){'}'}</td><td>${'{'}esc(r.price){'}'}</td><td>${'{'}esc(r.availability){'}'}</td><td>${'{'}esc(r.priority){'}'}</td><td>${'{'}esc(r.audio_use){'}'}</td><td>${'{'}linkCell{'}'}</td></tr>`;
+ }}).join('');
 }}
 ['search','category','priority','onlyNew'].forEach(id=>document.getElementById(id).addEventListener('input',render));
 render();

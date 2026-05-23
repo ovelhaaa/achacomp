@@ -25,9 +25,9 @@ jobs:
       - name: Install deps
         run: pip install -r requirements.txt
       - name: Run tests
-        run: python -m pytest
+        run: PYTHONPATH=src python -m pytest
       - name: Scan and report
-        run: python -m component_radar.cli all
+        run: PYTHONPATH=src python -m component_radar.cli all
       - name: Commit data/public changes
         run: |
           git config user.name "github-actions[bot]"
