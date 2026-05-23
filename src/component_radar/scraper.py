@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import time
+import logging
 from datetime import datetime, timezone
 from urllib.parse import quote_plus
 
@@ -11,6 +12,8 @@ from .config import AppConfig, STORES_FILE, TARGETS_FILE, load_yaml
 from .extractors import get_extractor
 from .normalizer import is_component_match
 from .storage import stable_hash
+
+logger = logging.getLogger(__name__)
 
 
 def _fetch(session: requests.Session, url: str, cfg: AppConfig) -> str:
@@ -28,7 +31,11 @@ def _fetch(session: requests.Session, url: str, cfg: AppConfig) -> str:
 
 def _store_search_url(store: dict[str, str], term: str) -> str:
     template = store.get("search_url") or store.get("base_url") or ""
-    return template.format(query=quote_plus(term))
+    if "{query}" not in template:
+        if store.get("enabled", True):
+            logger.warning("Store '%s' has no {query} in URL template; skipping", store.get("id", "unknown"))
+        return ""
+    return template.replace("{query}", quote_plus(term))
 
 
 def run_scan(cfg: AppConfig | None = None) -> list[dict[str, str]]:
@@ -62,7 +69,8 @@ def run_scan(cfg: AppConfig | None = None) -> list[dict[str, str]]:
                     candidates = extractor.extract(html, url, base_url, term)
                     if not candidates and store.get("extractor") != "generic":
                         candidates = get_extractor("generic").extract(html, url, base_url, term)
-                except Exception:
+                except Exception as exc:
+                    logger.warning("Extractor failed for store '%s' term '%s': %s", store.get("id", "unknown"), term, exc)
                     candidates = []
                 for cand in candidates:
                     if not is_component_match(term, cand.raw_text or ""):

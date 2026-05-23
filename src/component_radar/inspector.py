@@ -24,7 +24,10 @@ def candidate_selectors(html: str) -> dict[str, list[tuple[str, int]]]:
     for field, terms in KEYWORDS.items():
         counts: Counter[str] = Counter()
         for tag in soup.find_all(True):
-            joined = " ".join((tag.get("class") or [])) + " " + (tag.get("id") or "")
+            tag_id = tag.get("id")
+            if isinstance(tag_id, list):
+                tag_id = " ".join(tag_id)
+            joined = " ".join((tag.get("class") or [])) + " " + (tag_id or "")
             low = joined.lower()
             if any(t in low for t in terms):
                 counts[_selector_for(tag)] += 1

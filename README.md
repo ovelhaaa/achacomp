@@ -44,7 +44,7 @@ Se depender fortemente de JS, mantenha `enabled: false` e documente `unsupported
 
 - Respeite `robots.txt` e termos de uso.
 - Não faça scraping agressivo.
-- Não contorne CAPTCHA/login.
+- Evite contornar CAPTCHA/login.
 
 ## GitHub Actions
 

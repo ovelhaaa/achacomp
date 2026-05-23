@@ -65,7 +65,7 @@ stores:
   - id: digikey
     name: Digi-Key
     base_url: https://www.digikey.com.br
-    search_url: ""
+    search_url: https://www.digikey.com.br/pt/products/result?keywords={query}
     extractor: generic
     enabled: false
     scope: international

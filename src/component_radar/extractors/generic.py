@@ -7,12 +7,22 @@ from bs4 import BeautifulSoup
 
 from .base import ExtractedProduct, StoreExtractor
 
-_PRICE_PATTERN = re.compile(r"(?:R\$\s*)?\d+[\.,]\d{2}")
+_PRICE_PATTERN = re.compile(r"(?:R\$\s*)?(?:\d{1,3}(?:\.\d{3})*|\d+)[\.,]\d{2}")
 
 
 def extract_price(text: str) -> str:
     m = _PRICE_PATTERN.search(text)
     return m.group(0) if m else ""
+
+
+def price_to_float(price_text: str) -> float | None:
+    if not price_text:
+        return None
+    normalized = price_text.replace("R$", "").replace(" ", "").replace(".", "").replace(",", ".")
+    try:
+        return float(normalized)
+    except ValueError:
+        return None
 
 
 def extract_availability(text: str) -> str:
