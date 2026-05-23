@@ -39,7 +39,7 @@ def test_report_handles_empty_fields_and_escaping(tmp_path: Path):
 def test_run_scan_deduplicates_by_hash(monkeypatch):
     import component_radar.scraper as scraper
 
-    monkeypatch.setattr(scraper, "load_yaml", lambda path: {"categories": {"cat": {"components": ["LM308"]}}} if "targets" in str(path) else {"stores": [{"name": "S1", "base_url": "https://x.test?q={query}", "extractor": "generic"}]})
+    monkeypatch.setattr(scraper, "load_yaml", lambda path: {"categories": {"cat": {"components": ["LM308"]}}} if "targets" in str(path) else {"stores": [{"id": "S1", "name": "S1", "search_url": "https://x.test?q={query}", "enabled": True, "scope": "national", "extractor": "generic"}]})
     monkeypatch.setattr(scraper, "_fetch", lambda *args, **kwargs: "<a href='/p'>LM308N</a><a href='/p'>LM308N</a>")
     monkeypatch.setattr(scraper.time, "sleep", lambda *_: None)
 
@@ -49,13 +49,18 @@ def test_run_scan_deduplicates_by_hash(monkeypatch):
 
 def test_run_scan_keeps_richest_duplicate(monkeypatch):
     import component_radar.scraper as scraper
+    from component_radar.extractors.base import ExtractedProduct
 
-    monkeypatch.setattr(scraper, "load_yaml", lambda path: {"categories": {"cat": {"components": ["LM308"]}}} if "targets" in str(path) else {"stores": [{"name": "S1", "base_url": "https://x.test?q={query}", "extractor": "generic"}]})
+    monkeypatch.setattr(scraper, "load_yaml", lambda path: {"categories": {"cat": {"components": ["LM308"]}}} if "targets" in str(path) else {"stores": [{"id": "S1", "name": "S1", "search_url": "https://x.test?q={query}", "enabled": True, "scope": "national", "extractor": "generic"}]})
     monkeypatch.setattr(scraper, "_fetch", lambda *args, **kwargs: "<html></html>")
-    monkeypatch.setitem(scraper.run_scan.__globals__, "_extract_generic", lambda *args, **kwargs: [
-        {"title": "LM308N", "link": "https://x.test/p", "raw_text": "LM308N", "price": "", "availability": ""},
-        {"title": "LM308N", "link": "https://x.test/p", "raw_text": "LM308N R$ 12,30 em estoque", "price": "R$ 12,30", "availability": "disponível"},
-    ])
+    class _MockExtractor:
+        def extract(self, *args, **kwargs):
+            return [
+                ExtractedProduct(title="LM308N", link="https://x.test/p", raw_text="LM308N", price="", availability=""),
+                ExtractedProduct(title="LM308N", link="https://x.test/p", raw_text="LM308N R$ 12,30 em estoque", price="R$ 12,30", availability="disponível"),
+            ]
+
+    monkeypatch.setattr(scraper, "get_extractor", lambda *_: _MockExtractor())
     monkeypatch.setattr(scraper.time, "sleep", lambda *_: None)
 
     items = run_scan(AppConfig(request_interval_seconds=0, retries=0))

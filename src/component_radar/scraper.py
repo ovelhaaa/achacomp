@@ -1,72 +1,19 @@
 from __future__ import annotations
 
-import re
 import time
+import logging
 from datetime import datetime, timezone
-from urllib.parse import quote_plus, urljoin
+from urllib.parse import quote_plus
 
 import requests
-from bs4 import BeautifulSoup
 
 from .classifier import audio_use_for_category, classify_priority
 from .config import AppConfig, STORES_FILE, TARGETS_FILE, load_yaml
+from .extractors import get_extractor
 from .normalizer import is_component_match
 from .storage import stable_hash
 
-_PRICE_PATTERN = re.compile(r"(?:R\$\s*)?\d+[\.,]\d{2}")
-
-
-def _extract_price(text: str) -> str:
-    m = _PRICE_PATTERN.search(text)
-    return m.group(0) if m else ""
-
-
-def _extract_availability(text: str) -> str:
-    low = text.lower()
-    if "esgotado" in low or "indispon" in low:
-        return "indisponível"
-    if "em estoque" in low or "dispon" in low:
-        return "disponível"
-    return ""
-
-
-def _extract_generic(html: str, base_url: str) -> list[dict[str, str]]:
-    soup = BeautifulSoup(html, "html.parser")
-    out: list[dict[str, str]] = []
-    for a in soup.select("a[href]"):
-        title = " ".join(a.get_text(" ", strip=True).split())
-        if len(title) < 4:
-            continue
-        link = urljoin(base_url, a.get("href", ""))
-        text = " ".join((a.parent.get_text(" ", strip=True) if a.parent else title).split())
-        out.append({
-            "title": title,
-            "link": link,
-            "raw_text": text,
-            "price": _extract_price(text),
-            "availability": _extract_availability(text),
-        })
-    return out
-
-
-def _extract_eletronica_castro(html: str, base_url: str) -> list[dict[str, str]]:
-    soup = BeautifulSoup(html, "html.parser")
-    items: list[dict[str, str]] = []
-    for node in soup.select(".w-100.float-left.link-name"):
-        title = " ".join(node.get_text(" ", strip=True).split())
-        if not title:
-            continue
-        anchor = node if node.name == "a" else node.find_parent("a")
-        link = urljoin(base_url, anchor.get("href", "") if anchor else base_url)
-        text = " ".join((anchor.parent.get_text(" ", strip=True) if anchor and anchor.parent else title).split())
-        items.append({
-            "title": title,
-            "link": link,
-            "raw_text": text,
-            "price": _extract_price(text),
-            "availability": _extract_availability(text),
-        })
-    return items or _extract_generic(html, base_url)
+logger = logging.getLogger(__name__)
 
 
 def _fetch(session: requests.Session, url: str, cfg: AppConfig) -> str:
@@ -82,12 +29,20 @@ def _fetch(session: requests.Session, url: str, cfg: AppConfig) -> str:
     return ""
 
 
+def _store_search_url(store: dict[str, str], term: str) -> str:
+    template = store.get("search_url") or store.get("base_url") or ""
+    if "{query}" not in template:
+        if store.get("enabled", True):
+            logger.warning("Store '%s' has no {query} in URL template; skipping", store.get("id", "unknown"))
+        return ""
+    return template.replace("{query}", quote_plus(term))
+
+
 def run_scan(cfg: AppConfig | None = None) -> list[dict[str, str]]:
     cfg = cfg or AppConfig()
     targets = load_yaml(TARGETS_FILE).get("categories", {})
     stores = load_yaml(STORES_FILE).get("stores", [])
     scan_time = datetime.now(timezone.utc).isoformat()
-    extractor_map = {"generic": _extract_generic, "eletronica_castro": _extract_eletronica_castro}
     out: list[dict[str, str]] = []
     by_hash: dict[str, dict[str, str]] = {}
 
@@ -100,23 +55,34 @@ def run_scan(cfg: AppConfig | None = None) -> list[dict[str, str]]:
     for category, cdata in targets.items():
         for term in cdata.get("components", []):
             for store in stores:
-                url = store["base_url"].format(query=quote_plus(term))
+                if not store.get("enabled", True):
+                    continue
+                if store.get("scope", "national") in {"international", "unknown"}:
+                    continue
+                url = _store_search_url(store, term)
+                if not url:
+                    continue
+                base_url = store.get("base_url", url)
+                extractor = get_extractor(store.get("extractor", "generic"))
                 try:
                     html = _fetch(session, url, cfg)
-                    candidates = extractor_map.get(store.get("extractor", "generic"), _extract_generic)(html, url)
-                except Exception:
+                    candidates = extractor.extract(html, url, base_url, term)
+                    if not candidates and store.get("extractor") != "generic":
+                        candidates = get_extractor("generic").extract(html, url, base_url, term)
+                except Exception as exc:
+                    logger.warning("Extractor failed for store '%s' term '%s': %s", store.get("id", "unknown"), term, exc)
                     candidates = []
                 for cand in candidates:
-                    if not is_component_match(term, cand.get("raw_text", "")):
+                    if not is_component_match(term, cand.raw_text or ""):
                         continue
                     item = {
                         "term": term,
                         "category": category,
                         "store": store["name"],
-                        "title": cand.get("title", ""),
-                        "price": cand.get("price", ""),
-                        "availability": cand.get("availability", ""),
-                        "link": cand.get("link", url),
+                        "title": cand.title,
+                        "price": cand.price or "",
+                        "availability": cand.availability or "",
+                        "link": cand.link or url,
                         "priority": classify_priority(term),
                         "audio_use": audio_use_for_category(category),
                         "scan_datetime": scan_time,

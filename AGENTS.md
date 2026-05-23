@@ -8,3 +8,9 @@
 - Manter `targets.yaml` e `stores.yaml` legíveis para usuário não técnico.
 - Preferir funções pequenas.
 - Não colocar segredos no repositório.
+- Ao adicionar loja nova, preferir `enabled: false` se a URL de busca ou HTML não forem confiáveis.
+- Manter frequência de scraping inalterada.
+- Adicionar Playwright somente quando necessário.
+- Criar fixture HTML é obrigatório para extratores específicos.
+- O fallback genérico deve ser mantido.
+- É proibido criar código para contornar CAPTCHA, login ou bloqueio explícito.

@@ -12,6 +12,7 @@ Radar para varrer lojas brasileiras de eletrônica em busca de componentes útei
 - Scan: `PYTHONPATH=src python -m component_radar.cli scan`
 - Report: `PYTHONPATH=src python -m component_radar.cli report`
 - Tudo: `PYTHONPATH=src python -m component_radar.cli all`
+- Inspecionar loja: `PYTHONPATH=src python -m component_radar.cli inspect-store --store eletronica_castro --term LM308`
 
 Arquivos gerados:
 - `data/latest.csv`
@@ -19,19 +20,31 @@ Arquivos gerados:
 - `data/seen.json`
 - `public/index.html`
 
-## Editar alvos
+## Lojas e extratores
 
-Edite `targets.yaml` por categoria e componentes. O arquivo também define `audio_use` por categoria.
+`stores.yaml` suporta metadados por loja (`id`, `name`, `base_url`, `search_url`, `extractor`, `enabled`, `scope`, `notes`).
 
-## Editar lojas
+- Use `extractor: generic` quando ainda não houver extrator específico.
+- Lojas `enabled: false` não entram no scan padrão.
+- Escopos `international` e `unknown` ficam fora da busca principal por padrão.
+- O radar prioriza compra prática no Brasil (nacional/regional/marketplace BR).
 
-Edite `stores.yaml` com `name`, `base_url` (com `{query}`) e `extractor`.
+### Adicionar loja nova
 
-## GitHub Pages
+1. Adicione no `stores.yaml` com `enabled: false` se a busca não estiver validada.
+2. Rode `inspect-store` para baixar HTML e ver candidatos de seletor.
+3. Se necessário, implemente extrator específico em `src/component_radar/extractors/`.
+4. Sempre mantenha fallback para `generic`.
 
-1. Ative Pages em **Settings → Pages**.
-2. Em **Build and deployment**, selecione **GitHub Actions**.
-3. Rode o workflow manualmente em **Actions → scan-and-publish → Run workflow**.
+### Lojas com JavaScript
+
+Se depender fortemente de JS, mantenha `enabled: false` e documente `unsupported_js: true` (quando aplicável). Não forçar bypass.
+
+### Scraping educado
+
+- Respeite `robots.txt` e termos de uso.
+- Não faça scraping agressivo.
+- Evite contornar CAPTCHA/login.
 
 ## GitHub Actions
 
@@ -40,24 +53,3 @@ Workflow: `.github/workflows/scan-and-publish.yml`
 - executa testes, scan e report.
 - commita mudanças em `data/` e `public/`.
 - publica `public/` via actions oficiais de Pages.
-
-## Segurança e boas práticas
-
-- Respeite `robots.txt` e termos de uso das lojas.
-- Não faça scraping agressivo.
-- O scanner usa timeout, retry curto e intervalo entre requests.
-- Frequência recomendada: 1 vez ao dia.
-
-## Limitações
-
-- HTML das lojas pode mudar.
-- Algumas lojas bloqueiam scraping.
-- Conteúdo renderizado por JavaScript pode não aparecer no `requests`.
-- Extração de preço/disponibilidade ainda é genérica.
-
-## Próximos passos
-
-- Extratores específicos por loja para preço/estoque melhores.
-- Alertas Telegram/Email para novidades de alta prioridade.
-- Classificação com IA assistiva.
-- Suporte opcional a Playwright para páginas JS.
