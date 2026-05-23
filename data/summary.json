@@ -1,0 +1,34 @@
+{
+  "generated_at": "2026-05-23T05:45:28.301015+00:00",
+  "items_total": 0,
+  "items_new": 0,
+  "items_returned": 0,
+  "items_missing": 0,
+  "items_price_drop": 0,
+  "items_price_drop_significant": 0,
+  "items_price_increase": 0,
+  "items_availability_changed": 0,
+  "stores_total": 3,
+  "stores_success": 0,
+  "stores_failed": 3,
+  "failed_stores": [
+    {
+      "store_id": "eletronica_castro",
+      "success": false,
+      "error": "403 Client Error: Forbidden for url: https://www.eletronicacastro.com.br/produto/busca/?q=CD4066",
+      "items_found": 0
+    },
+    {
+      "store_id": "soldafria",
+      "success": false,
+      "error": "403 Client Error: Forbidden for url: https://www.soldafria.com.br/busca?busca=CD4066",
+      "items_found": 0
+    },
+    {
+      "store_id": "bau_eletronica",
+      "success": false,
+      "error": "404 Client Error: Not Found for url: https://www.baudaeletronica.com.br/catalogsearch/result/?q=CD4066",
+      "items_found": 0
+    }
+  ]
+}
