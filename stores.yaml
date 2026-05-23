@@ -1,10 +1,72 @@
 stores:
-  - name: "Eletrônica Castro"
-    base_url: "https://www.eletronicacastro.com.br/produto/busca/?q={query}"
-    extractor: "eletronica_castro"
-  - name: "Soldafria"
-    base_url: "https://www.soldafria.com.br/busca?busca={query}"
-    extractor: "generic"
-  - name: "Baú da Eletrônica"
-    base_url: "https://www.baudaeletronica.com.br/catalogsearch/result/?q={query}"
-    extractor: "generic"
+  - id: eletronica_castro
+    name: Eletrônica Castro
+    base_url: https://www.eletronicacastro.com.br
+    search_url: https://www.eletronicacastro.com.br/produto/busca/?q={query}
+    extractor: eletronica_castro
+    enabled: true
+    scope: national
+    notes: Busca simples por query.
+
+  - id: soldafria
+    name: Soldafria
+    base_url: https://www.soldafria.com.br
+    search_url: https://www.soldafria.com.br/busca?busca={query}
+    extractor: soldafria
+    enabled: true
+    scope: national
+    notes: Estrutura variável; fallback genérico nesta etapa.
+
+  - id: bau_eletronica
+    name: Baú da Eletrônica
+    base_url: https://www.baudaeletronica.com.br
+    search_url: https://www.baudaeletronica.com.br/catalogsearch/result/?q={query}
+    extractor: bau_eletronica
+    enabled: true
+    scope: national
+    notes: Busca HTML tradicional.
+
+  - id: mult_comercial
+    name: Mult Comercial
+    base_url: https://www.multcomercial.com.br
+    search_url: https://www.multcomercial.com.br/busca?termo={query}
+    extractor: generic
+    enabled: false
+    scope: unknown
+    notes: URL de busca precisa validação.
+
+  - id: usinainfo
+    name: UsinaInfo
+    base_url: https://www.usinainfo.com.br
+    search_url: https://www.usinainfo.com.br/busca?controller=search&s={query}
+    extractor: generic
+    enabled: false
+    scope: national
+    notes: Candidata, ativar após validar HTML de busca.
+
+  - id: eletrogate
+    name: Eletrogate
+    base_url: https://www.eletrogate.com
+    search_url: https://www.eletrogate.com/busca?ft={query}
+    extractor: generic
+    enabled: false
+    scope: national
+    notes: Candidata; validar seletor antes de ativar.
+
+  - id: mercadolivre
+    name: Mercado Livre
+    base_url: https://lista.mercadolivre.com.br
+    search_url: https://lista.mercadolivre.com.br/{query}
+    extractor: generic
+    enabled: false
+    scope: marketplace_br
+    notes: Marketplace com ruído alto; filtros entram em etapa dedicada.
+
+  - id: digikey
+    name: Digi-Key
+    base_url: https://www.digikey.com.br
+    search_url: ""
+    extractor: generic
+    enabled: false
+    scope: international
+    notes: Distribuidor internacional; manter fora da busca principal por frete/importação.
