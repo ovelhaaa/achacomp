@@ -38,13 +38,13 @@ def _store_search_url(store: dict[str, str], term: str) -> str:
     return template.replace("{query}", quote_plus(term))
 
 
-def run_scan(cfg: AppConfig | None = None) -> list[dict[str, str]]:
+def run_scan(cfg: AppConfig | None = None) -> tuple[list[dict[str, str]], list[dict[str, object]]]:
     cfg = cfg or AppConfig()
     targets = load_yaml(TARGETS_FILE).get("categories", {})
     stores = load_yaml(STORES_FILE).get("stores", [])
     scan_time = datetime.now(timezone.utc).isoformat()
-    out: list[dict[str, str]] = []
     by_hash: dict[str, dict[str, str]] = {}
+    store_status: dict[str, dict[str, object]] = {}
 
     def _score_item(x: dict[str, str]) -> tuple[int, int, int]:
         return (int(bool(x.get("price"))), int(bool(x.get("availability"))), len(x.get("title", "")))
@@ -57,8 +57,11 @@ def run_scan(cfg: AppConfig | None = None) -> list[dict[str, str]]:
             for store in stores:
                 if not store.get("enabled", True):
                     continue
-                if store.get("scope", "national") in {"international", "unknown"}:
+                scope = store.get("scope", "national")
+                if scope in {"international", "unknown"}:
                     continue
+                store_id = store["id"]
+                status = store_status.setdefault(store_id, {"store_id": store_id, "success": True, "error": None, "items_found": 0})
                 url = _store_search_url(store, term)
                 if not url:
                     continue
@@ -70,7 +73,9 @@ def run_scan(cfg: AppConfig | None = None) -> list[dict[str, str]]:
                     if not candidates and store.get("extractor") != "generic":
                         candidates = get_extractor("generic").extract(html, url, base_url, term)
                 except Exception as exc:
-                    logger.warning("Extractor failed for store '%s' term '%s': %s", store.get("id", "unknown"), term, exc)
+                    status["success"] = False
+                    status["error"] = str(exc)
+                    logger.warning("Extractor failed for store '%s' term '%s': %s", store_id, term, exc)
                     candidates = []
                 for cand in candidates:
                     if not is_component_match(term, cand.raw_text or ""):
@@ -79,6 +84,7 @@ def run_scan(cfg: AppConfig | None = None) -> list[dict[str, str]]:
                         "term": term,
                         "category": category,
                         "store": store["name"],
+                        "store_id": store_id,
                         "title": cand.title,
                         "price": cand.price or "",
                         "availability": cand.availability or "",
@@ -86,11 +92,12 @@ def run_scan(cfg: AppConfig | None = None) -> list[dict[str, str]]:
                         "priority": classify_priority(term),
                         "audio_use": audio_use_for_category(category),
                         "scan_datetime": scan_time,
+                        "scope": scope,
                     }
                     item["hash"] = stable_hash(item)
                     existing = by_hash.get(item["hash"])
                     if existing is None or _score_item(item) > _score_item(existing):
                         by_hash[item["hash"]] = item
+                status["items_found"] = int(status["items_found"]) + len(candidates)
                 time.sleep(cfg.request_interval_seconds)
-    out.extend(by_hash.values())
-    return out
+    return list(by_hash.values()), list(store_status.values())

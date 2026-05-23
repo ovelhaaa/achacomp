@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import argparse
+from datetime import datetime, timezone
 from pathlib import Path
 import re
 
 import requests
 
-from .config import AppConfig, STORES_FILE, load_yaml
+from .config import AppConfig, STORES_FILE, SUMMARY_JSON, load_yaml
 from .extractors import get_extractor
 from .inspector import candidate_selectors
 from .report import generate_report
@@ -15,17 +16,38 @@ from .storage import save_latest, update_history
 
 
 def cmd_scan() -> None:
-    items = run_scan()
-    scan_time = items[0]["scan_datetime"] if items else ""
-    items = update_history(items, scan_time)
-    save_latest(items)
+    items, store_status = run_scan()
+    scan_time = items[0]["scan_datetime"] if items else datetime.now(timezone.utc).isoformat()
+    successful = {s["store_id"] for s in store_status if s.get("success")}
+    items, summary = update_history(items, scan_time, successful)
+    summary.update({
+        "stores_total": len(store_status),
+        "stores_success": sum(1 for s in store_status if s.get("success")),
+        "stores_failed": sum(1 for s in store_status if not s.get("success")),
+        "failed_stores": [s for s in store_status if not s.get("success")],
+    })
+    save_latest(items, summary)
     print(f"scan finalizado: {len(items)} achados")
+
+
+def cmd_history_summary() -> None:
+    if not SUMMARY_JSON.exists():
+        print("summary inexistente")
+        return
+    import json
+    s = json.loads(SUMMARY_JSON.read_text(encoding="utf-8"))
+    print(f"novos: {s.get('items_new',0)}")
+    print(f"retornos: {s.get('items_returned',0)}")
+    print(f"sumidos: {s.get('items_missing',0)}")
+    print(f"quedas de preço: {s.get('items_price_drop',0)}")
+    print(f"lojas com erro: {s.get('stores_failed',0)}")
 
 
 def cmd_report() -> None:
     path = generate_report()
     print(f"relatório gerado em {path}")
 
+# rest unchanged helpers
 
 def _slug_term(term: str) -> str:
     cleaned = re.sub(r"[^A-Za-z0-9._-]+", "_", term.strip())
@@ -44,10 +66,7 @@ def _save_debug_html(html: str, store_id: str, term: str) -> Path:
     debug_path.mkdir(parents=True, exist_ok=True)
     safe_term = _slug_term(term)
     dump_file = debug_path / f"{store_id}_{safe_term}.html"
-    try:
-        dump_file.write_text(html, encoding="utf-8")
-    except OSError as exc:
-        raise SystemExit(f"Falha ao gravar dump_file '{dump_file}': {exc}") from exc
+    dump_file.write_text(html, encoding="utf-8")
     return dump_file
 
 
@@ -78,14 +97,9 @@ def cmd_inspect_store(store_id: str, term: str) -> None:
     session.headers.update({"User-Agent": cfg.user_agent})
     html = _fetch_html(session, url, cfg)
     _save_debug_html(html, store_id, term)
-
     base_url = store.get("base_url", url)
-    try:
-        specific = get_extractor(store.get("extractor", "generic")).extract(html, url, base_url, term)
-        generic = get_extractor("generic").extract(html, url, base_url, term)
-    except Exception as exc:
-        raise SystemExit(f"Falha em extractor.extract para store '{store_id}': {exc}") from exc
-
+    specific = get_extractor(store.get("extractor", "generic")).extract(html, url, base_url, term)
+    generic = get_extractor("generic").extract(html, url, base_url, term)
     candidates = candidate_selectors(html)
     _print_inspection_results(store_id, specific, generic, candidates, term)
 
@@ -96,6 +110,7 @@ def main() -> None:
     sub.add_parser("scan")
     sub.add_parser("report")
     sub.add_parser("all")
+    sub.add_parser("history-summary")
     inspect = sub.add_parser("inspect-store")
     inspect.add_argument("--store", required=True)
     inspect.add_argument("--term", required=True)
@@ -107,11 +122,10 @@ def main() -> None:
     elif args.command == "all":
         cmd_scan()
         cmd_report()
+    elif args.command == "history-summary":
+        cmd_history_summary()
     elif args.command == "inspect-store":
         cmd_inspect_store(args.store, args.term)
-    else:
-        parser.print_help()
-        raise SystemExit(f"comando desconhecido: {args.command}")
 
 
 if __name__ == "__main__":
