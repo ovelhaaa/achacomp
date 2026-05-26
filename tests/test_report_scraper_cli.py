@@ -40,7 +40,15 @@ def test_run_scan_deduplicates_by_hash(monkeypatch):
     import component_radar.scraper as scraper
 
     monkeypatch.setattr(scraper, "load_yaml", lambda path: {"categories": {"cat": {"components": ["LM308"]}}} if "targets" in str(path) else {"stores": [{"id": "S1", "name": "S1", "search_url": "https://x.test?q={query}", "enabled": True, "scope": "national", "extractor": "generic"}]})
-    monkeypatch.setattr(scraper, "_fetch", lambda *args, **kwargs: "<a href='/p'>LM308N</a><a href='/p'>LM308N</a>")
+    class _Resp:
+        def __init__(self):
+            self.status_code = 200
+            self.text = "<a href='/p'>LM308N</a><a href='/p'>LM308N</a>"
+            self.content = self.text.encode()
+            self.headers = {}
+            self.history = []
+            self.url = "https://x.test"
+    monkeypatch.setattr(scraper.HttpClient, "get", lambda *args, **kwargs: _Resp())
     monkeypatch.setattr(scraper.time, "sleep", lambda *_: None)
 
     items, status = run_scan(AppConfig(request_interval_seconds=0, retries=0))
@@ -53,7 +61,15 @@ def test_run_scan_keeps_richest_duplicate(monkeypatch):
     from component_radar.extractors.base import ExtractedProduct
 
     monkeypatch.setattr(scraper, "load_yaml", lambda path: {"categories": {"cat": {"components": ["LM308"]}}} if "targets" in str(path) else {"stores": [{"id": "S1", "name": "S1", "search_url": "https://x.test?q={query}", "enabled": True, "scope": "national", "extractor": "generic"}]})
-    monkeypatch.setattr(scraper, "_fetch", lambda *args, **kwargs: "<html></html>")
+    class _Resp:
+        def __init__(self):
+            self.status_code = 200
+            self.text = "<html></html>"
+            self.content = self.text.encode()
+            self.headers = {}
+            self.history = []
+            self.url = "https://x.test"
+    monkeypatch.setattr(scraper.HttpClient, "get", lambda *args, **kwargs: _Resp())
     class _MockExtractor:
         def extract(self, *args, **kwargs):
             return [

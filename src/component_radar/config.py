@@ -13,7 +13,7 @@ class AppConfig:
     timeout_seconds: int = 15
     retries: int = 2
     backoff_seconds: float = 0.8
-    user_agent: str = "component-radar-br/0.1 (+https://github.com/) contato-responsavel"
+    user_agent: str | None = None
 
 
 ROOT = Path(__file__).resolve().parents[2]
