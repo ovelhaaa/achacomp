@@ -19,3 +19,8 @@
 - Não considerar mudança de preço se o preço não foi parseado com confiança.
 - Não quebrar relatório HTML por campo vazio.
 - Criar testes para cada novo evento histórico.
+- Não implementar bypass de CAPTCHA, login, Cloudflare ou mecanismos anti-bot explícitos.
+- Não reduzir delays para varrer agressivamente.
+- Centralizar todas as requisições no HttpClient.
+- Sempre preservar timeout e retries limitados.
+- Sempre salvar HTML de debug quando status 200 não produz resultados.

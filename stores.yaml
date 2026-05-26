@@ -6,6 +6,9 @@ stores:
     extractor: eletronica_castro
     enabled: true
     scope: national
+    request:
+      headers:
+        Referer: https://www.eletronicacastro.com.br/
     notes: Busca simples por query.
 
   - id: soldafria

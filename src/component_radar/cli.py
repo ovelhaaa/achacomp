@@ -2,16 +2,13 @@ from __future__ import annotations
 
 import argparse
 from datetime import datetime, timezone
-from pathlib import Path
-import re
-
-import requests
 
 from .config import AppConfig, STORES_FILE, SUMMARY_JSON, load_yaml
 from .extractors import get_extractor
+from .http import HttpClient, save_no_results_html
 from .inspector import candidate_selectors
 from .report import generate_report
-from .scraper import _fetch, _store_search_url, run_scan
+from .scraper import _store_search_url, run_scan
 from .storage import save_latest, update_history
 
 
@@ -49,30 +46,11 @@ def cmd_report() -> None:
 
 # rest unchanged helpers
 
-def _slug_term(term: str) -> str:
-    cleaned = re.sub(r"[^A-Za-z0-9._-]+", "_", term.strip())
-    return cleaned.strip("._-") or "term"
-
-
-def _fetch_html(session: requests.Session, url: str, cfg: AppConfig) -> str:
-    try:
-        return _fetch(session, url, cfg)
-    except requests.RequestException as exc:
-        raise SystemExit(f"Falha em _fetch para URL '{url}': {exc}") from exc
-
-
-def _save_debug_html(html: str, store_id: str, term: str) -> Path:
-    debug_path = Path("data/debug")
-    debug_path.mkdir(parents=True, exist_ok=True)
-    safe_term = _slug_term(term)
-    dump_file = debug_path / f"{store_id}_{safe_term}.html"
-    dump_file.write_text(html, encoding="utf-8")
-    return dump_file
-
-
-def _print_inspection_results(store_id: str, specific, generic, candidates, term: str) -> None:
+def _print_inspection_results(store_id: str, specific, generic, candidates, term: str, status_code: int, html_size: int) -> None:
     print(f"store: {store_id}")
     print(f"term: {term}")
+    print(f"status: {status_code}")
+    print(f"html_bytes: {html_size}")
     print(f"specific: {len(specific)}")
     print(f"generic: {len(generic)}")
     print("top titles:")
@@ -93,15 +71,16 @@ def cmd_inspect_store(store_id: str, term: str) -> None:
     if not store:
         raise SystemExit(f"loja não encontrada: {store_id}")
     url = _store_search_url(store, term)
-    session = requests.Session()
-    session.headers.update({"User-Agent": cfg.user_agent})
-    html = _fetch_html(session, url, cfg)
-    _save_debug_html(html, store_id, term)
+    http_client = HttpClient(timeout=cfg.timeout_seconds, max_retries=cfg.retries, backoff_seconds=cfg.backoff_seconds, user_agent=cfg.user_agent)
+    response = http_client.get(url)
+    html = response.text
     base_url = store.get("base_url", url)
     specific = get_extractor(store.get("extractor", "generic")).extract(html, url, base_url, term)
     generic = get_extractor("generic").extract(html, url, base_url, term)
+    if response.status_code == 200 and not specific and not generic:
+        save_no_results_html(html, store_id, term)
     candidates = candidate_selectors(html)
-    _print_inspection_results(store_id, specific, generic, candidates, term)
+    _print_inspection_results(store_id, specific, generic, candidates, term, response.status_code, len(response.content))
 
 
 def main() -> None:

@@ -62,3 +62,13 @@ O radar agora mantém histórico avançado em `data/seen.json`, detectando event
 - Queda/subida de preço só é considerada quando o parser de preço brasileiro consegue extrair valor confiável.
 - Arquivos gerados: `data/summary.json`, `data/events.json` e `data/events.csv`.
 - O relatório HTML (`public/index.html`) inclui cards de resumo e filtro por evento.
+
+## Requisições HTTP e bloqueios
+
+O radar usa headers de navegador por padrão para evitar bloqueios triviais de `python-requests` e manter compatibilidade com lojas que ignoram User-Agent genérico.
+
+- Isso **não** deve ser usado para burlar CAPTCHA, login, Cloudflare ou bloqueios explícitos.
+- O User-Agent pode ser ajustado com `COMPONENT_RADAR_USER_AGENT`.
+- `stores.yaml` pode definir `referer` ou `request.headers` por loja (ex.: `Referer`).
+- Quando uma resposta `200` não gera resultados, o HTML é salvo em `data/debug/no_results/` para diagnóstico de extrator.
+

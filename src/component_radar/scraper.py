@@ -1,32 +1,18 @@
 from __future__ import annotations
 
-import time
 import logging
+import time
 from datetime import datetime, timezone
 from urllib.parse import quote_plus
-
-import requests
 
 from .classifier import audio_use_for_category, classify_priority
 from .config import AppConfig, STORES_FILE, TARGETS_FILE, load_yaml
 from .extractors import get_extractor
+from .http import HttpClient, probable_blocked_html, save_no_results_html
 from .normalizer import is_component_match
 from .storage import stable_hash
 
 logger = logging.getLogger(__name__)
-
-
-def _fetch(session: requests.Session, url: str, cfg: AppConfig) -> str:
-    for attempt in range(cfg.retries + 1):
-        try:
-            resp = session.get(url, timeout=cfg.timeout_seconds)
-            resp.raise_for_status()
-            return resp.text
-        except requests.RequestException:
-            if attempt >= cfg.retries:
-                raise
-            time.sleep(cfg.backoff_seconds * (attempt + 1))
-    return ""
 
 
 def _store_search_url(store: dict[str, str], term: str) -> str:
@@ -36,6 +22,19 @@ def _store_search_url(store: dict[str, str], term: str) -> str:
             logger.warning("Store '%s' has no {query} in URL template; skipping", store.get("id", "unknown"))
         return ""
     return template.replace("{query}", quote_plus(term))
+
+
+def _store_headers(store: dict[str, object]) -> dict[str, str]:
+    headers: dict[str, str] = {}
+    referer = store.get("referer")
+    if isinstance(referer, str) and referer:
+        headers["Referer"] = referer
+    request_cfg = store.get("request")
+    if isinstance(request_cfg, dict):
+        request_headers = request_cfg.get("headers")
+        if isinstance(request_headers, dict):
+            headers.update({str(k): str(v) for k, v in request_headers.items()})
+    return headers
 
 
 def run_scan(cfg: AppConfig | None = None) -> tuple[list[dict[str, str]], list[dict[str, object]]]:
@@ -49,8 +48,12 @@ def run_scan(cfg: AppConfig | None = None) -> tuple[list[dict[str, str]], list[d
     def _score_item(x: dict[str, str]) -> tuple[int, int, int]:
         return (int(bool(x.get("price"))), int(bool(x.get("availability"))), len(x.get("title", "")))
 
-    session = requests.Session()
-    session.headers.update({"User-Agent": cfg.user_agent})
+    http_client = HttpClient(
+        timeout=cfg.timeout_seconds,
+        max_retries=cfg.retries,
+        backoff_seconds=cfg.backoff_seconds,
+        user_agent=cfg.user_agent,
+    )
 
     for category, cdata in targets.items():
         for term in cdata.get("components", []):
@@ -67,11 +70,36 @@ def run_scan(cfg: AppConfig | None = None) -> tuple[list[dict[str, str]], list[d
                     continue
                 base_url = store.get("base_url", url)
                 extractor = get_extractor(store.get("extractor", "generic"))
+                headers = _store_headers(store)
+                timeout = cfg.timeout_seconds
+                request_cfg = store.get("request")
+                if isinstance(request_cfg, dict) and request_cfg.get("timeout_seconds"):
+                    timeout = float(request_cfg["timeout_seconds"])
                 try:
-                    html = _fetch(session, url, cfg)
+                    response = http_client.get(url, headers=headers, timeout=timeout)
+                    html = response.text
+                    logger.info(
+                        "store=%s term=%s status=%s content_type=%s bytes=%s redirected=%s final_url=%s",
+                        store_id,
+                        term,
+                        response.status_code,
+                        response.headers.get("Content-Type", ""),
+                        len(response.content),
+                        bool(response.history),
+                        response.url,
+                    )
+                    if response.status_code >= 400:
+                        status["success"] = False
+                        status["error"] = f"HTTP {response.status_code}"
+                        continue
                     candidates = extractor.extract(html, url, base_url, term)
                     if not candidates and store.get("extractor") != "generic":
                         candidates = get_extractor("generic").extract(html, url, base_url, term)
+                    if not candidates:
+                        save_no_results_html(html, store_id, term)
+                    if probable_blocked_html(html):
+                        status["probable_block"] = True
+                        logger.warning("Possível bloqueio detectado store=%s term=%s", store_id, term)
                 except Exception as exc:
                     status["success"] = False
                     status["error"] = str(exc)
