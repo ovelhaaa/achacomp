@@ -8,7 +8,7 @@ from .extractors import get_extractor
 from .http import HttpClient, save_no_results_html
 from .inspector import candidate_selectors
 from .report import generate_report
-from .scraper import _store_search_url, run_scan
+from .scraper import _store_headers, _store_search_url, run_scan
 from .storage import save_latest, update_history
 
 
@@ -71,8 +71,21 @@ def cmd_inspect_store(store_id: str, term: str) -> None:
     if not store:
         raise SystemExit(f"loja não encontrada: {store_id}")
     url = _store_search_url(store, term)
-    http_client = HttpClient(timeout=cfg.timeout_seconds, max_retries=cfg.retries, backoff_seconds=cfg.backoff_seconds, user_agent=cfg.user_agent)
-    response = http_client.get(url)
+    http_client = HttpClient(
+        timeout=cfg.timeout_seconds,
+        max_retries=cfg.retries,
+        backoff_seconds=cfg.backoff_seconds,
+        user_agent=cfg.user_agent,
+    )
+    headers = _store_headers(store)
+    timeout = cfg.timeout_seconds
+    request_cfg = store.get("request")
+    if isinstance(request_cfg, dict) and request_cfg.get("timeout_seconds"):
+        timeout = float(request_cfg["timeout_seconds"])
+    try:
+        response = http_client.get(url, headers=headers, timeout=timeout)
+    except Exception as exc:
+        raise SystemExit(f"Falha ao requisitar URL '{url}': {exc}") from exc
     html = response.text
     base_url = store.get("base_url", url)
     specific = get_extractor(store.get("extractor", "generic")).extract(html, url, base_url, term)

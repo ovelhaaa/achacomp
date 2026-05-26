@@ -91,15 +91,16 @@ def run_scan(cfg: AppConfig | None = None) -> tuple[list[dict[str, str]], list[d
                     if response.status_code >= 400:
                         status["success"] = False
                         status["error"] = f"HTTP {response.status_code}"
-                        continue
-                    candidates = extractor.extract(html, url, base_url, term)
-                    if not candidates and store.get("extractor") != "generic":
-                        candidates = get_extractor("generic").extract(html, url, base_url, term)
-                    if not candidates:
-                        save_no_results_html(html, store_id, term)
-                    if probable_blocked_html(html):
-                        status["probable_block"] = True
-                        logger.warning("Possível bloqueio detectado store=%s term=%s", store_id, term)
+                        candidates = []
+                    else:
+                        candidates = extractor.extract(html, url, base_url, term)
+                        if not candidates and store.get("extractor") != "generic":
+                            candidates = get_extractor("generic").extract(html, url, base_url, term)
+                        if not candidates:
+                            save_no_results_html(html, store_id, term)
+                        if probable_blocked_html(html):
+                            status["probable_block"] = True
+                            logger.warning("Possível bloqueio detectado store=%s term=%s", store_id, term)
                 except Exception as exc:
                     status["success"] = False
                     status["error"] = str(exc)

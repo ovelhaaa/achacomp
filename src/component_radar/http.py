@@ -57,17 +57,15 @@ class HttpClient:
         for attempt in range(self.max_retries + 1):
             try:
                 response = self.session.get(url, timeout=timeout_s, headers=merged or None)
+                if response.status_code in {403, 429, 503} and attempt < self.max_retries:
+                    self._sleep(attempt, response.status_code)
+                    continue
+                return response
             except requests.RequestException:
                 if attempt >= self.max_retries:
                     raise
                 self._sleep(attempt, 0)
-                continue
-
-            if response.status_code in {403, 429, 503} and attempt < self.max_retries:
-                self._sleep(attempt, response.status_code)
-                continue
-            return response
-        raise requests.RequestException(f"Falha ao requisitar URL: {url}")
+        raise RuntimeError("unreachable")
 
     def _sleep(self, attempt: int, status_code: int) -> None:
         multiplier = 2 if status_code in {403, 429, 503} else 1
