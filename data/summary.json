@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-16T04:06:03.580377+00:00",
+  "generated_at": "2026-08-17T05:15:16.471738+00:00",
   "items_total": 0,
   "items_new": 0,
   "items_returned": 0,
@@ -21,7 +21,7 @@
     {
       "store_id": "soldafria",
       "success": false,
-      "error": "HTTP 404",
+      "error": "HTTPSConnectionPool(host='www.soldafria.com.br', port=443): Max retries exceeded with url: /busca?busca=CD4066 (Caused by NewConnectionError(\"HTTPSConnection(host='www.soldafria.com.br', port=443): Failed to establish a new connection: [Errno 101] Network is unreachable\"))",
       "items_found": 0
     },
     {
