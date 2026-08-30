@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-29T10:13:21.676534+00:00",
+  "generated_at": "2026-08-30T09:20:20.944431+00:00",
   "items_total": 0,
   "items_new": 0,
   "items_returned": 0,
@@ -21,7 +21,7 @@
     {
       "store_id": "soldafria",
       "success": false,
-      "error": "HTTP 403",
+      "error": "HTTP 404",
       "items_found": 0
     },
     {
