@@ -1,21 +1,27 @@
 {
-  "generated_at": "2026-11-17T11:49:30.298681+00:00",
-  "items_total": 31,
-  "items_new": 31,
+  "generated_at": "2026-11-18T11:46:36.631148+00:00",
+  "items_total": 0,
+  "items_new": 0,
   "items_returned": 0,
-  "items_missing": 1,
+  "items_missing": 0,
   "items_price_drop": 0,
   "items_price_drop_significant": 0,
   "items_price_increase": 0,
   "items_availability_changed": 0,
   "stores_total": 3,
-  "stores_success": 1,
-  "stores_failed": 2,
+  "stores_success": 0,
+  "stores_failed": 3,
   "failed_stores": [
+    {
+      "store_id": "eletronica_castro",
+      "success": false,
+      "error": "HTTP 403",
+      "items_found": 0
+    },
     {
       "store_id": "soldafria",
       "success": false,
-      "error": "HTTP 429",
+      "error": "HTTP 404",
       "items_found": 0
     },
     {
