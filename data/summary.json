@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-24T13:50:57.357645+00:00",
+  "generated_at": "2026-11-25T12:58:52.275951+00:00",
   "items_total": 0,
   "items_new": 0,
   "items_returned": 0,
@@ -27,7 +27,7 @@
     {
       "store_id": "bau_eletronica",
       "success": false,
-      "error": "HTTP 403",
+      "error": "HTTP 404",
       "items_found": 0
     }
   ]
